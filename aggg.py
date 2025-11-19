@@ -206,23 +206,108 @@ data_analyst = Agent(
     allow_delegation=False,
 )
 
+# research_formatter = Agent(
+#     role="Formatter Specialist",
+#     goal="Transform retrieved botanical research into structured JSON",
+#     backstory=dedent(
+#         "You are a highly disciplined data formatter. "
+#         "Your sole responsibility is to take research output from the retriever agent "
+#         "and convert it into a concise, standardized JSON structure for UI rendering."
+#     ),
+#     instructions=dedent(
+#         """
+#     - Input: messy or verbose botanical research data from the retriever agent.
+#     - Output: valid JSON matching the schema below.
+#     - Do not include explanations, markdown, or extra text.
+#     - If information is missing, omit that field.
+#     - Always ensure valid JSON syntax.
+#
+#     JSON Schema:
+#     {
+#       "specimen_description": {
+#         "botanical_name": "string",
+#         "common_names": ["string"],
+#         "part_used": "string",
+#         "preparation_form": "string",
+#         "morphology": "string"
+#       },
+#       "key_compounds": [
+#         {
+#           "compound": "string",
+#           "class": "string",
+#           "concentration_mg_g": number,
+#           "function": "string"
+#         }
+#       ],
+#       "compound_distribution": {
+#         "Flavonoid": number,
+#         "Phenolic acid": number,
+#         "Carotenoid": number,
+#         "Mineral": number
+#       },
+#       "toxicities_and_deficiencies": {
+#         "toxicities": ["string"],
+#         "deficiencies": ["string"]
+#       },
+#       "complementary_botanicals": {
+#         "iron_deficiency_anemia": ["string"],
+#         "enhanced_bioavailability": ["string"]
+#       },
+#       "treatable_ailments": ["string"],
+#       "pharmaceutical_comparison": [
+#         {
+#           "pharmaceutical": "string",
+#           "comparison": "string"
+#         }
+#       ]
+#     }
+#
+#     botanical_name: Latin name of the herb.
+#     common_names: List of common names in English.
+#     part_used: Part of the plant used medicinally (e.g., leaves, roots).
+#     preparation_form: Form in which the herb is prepared (e.g., extract, powder).
+#     morphology: Description of the plant's physical characteristics.
+#     key_compounds: List of key chemical compounds found in the herb.
+#         compound: Name of the compound.
+#         class: Chemical class (e.g., Flavonoid, Alkaloid).
+#         concentration_mg_g: Concentration in mg/g.
+#         function: Biological function or effect.
+#     compound_distribution: Distribution of major compound classes as percentages.
+#         Flavonoid: Percentage of flavonoids.
+#         Phenolic acid: Percentage of phenolic acids.
+#         Carotenoid: Percentage of carotenoids.
+#         Mineral: Percentage of minerals.
+#     toxicities_and_deficiencies: Known toxicities and nutrient deficiencies.
+#         toxicities: List of known toxic effects.
+#         deficiencies: List of nutrient deficiencies caused by the herb.
+#     complementary_botanicals: Plants that enhance therapeutic effect or bioavailability when combined.
+#         iron_deficiency_anemia (example condition-specific synergy) → Plants that pair well to treat a given ailment.
+#         enhanced_bioavailability → Plants that improve absorption of key compounds.
+#     treatable_ailments: List of ailments treatable with this herb.
+#     pharmaceutical_comparison: Comparison with conventional pharmaceuticals.
+#     """
+#     ),
+#     llm=agent,
+#     allow_delegation=False,
+# )
+
+
+# In your aggg.py, update the research_formatter agent instructions:
 research_formatter = Agent(
     role="Formatter Specialist",
     goal="Transform retrieved botanical research into structured JSON",
     backstory=dedent(
         "You are a highly disciplined data formatter. "
-        "Your sole responsibility is to take research output from the retriever agent "
-        "and convert it into a concise, standardized JSON structure for UI rendering."
+        "Your sole responsibility is to take research output and convert it into a concise, standardized JSON structure."
     ),
-    instructions=dedent(
-        """
-    - Input: messy or verbose botanical research data from the retriever agent.
-    - Output: valid JSON matching the schema below.
-    - Do not include explanations, markdown, or extra text.
-    - If information is missing, omit that field.
-    - Always ensure valid JSON syntax.
+    instructions=dedent("""
+    CRITICAL INSTRUCTIONS:
+    - You MUST return ONLY valid JSON, no additional text, no explanations
+    - The JSON MUST follow this EXACT structure every time
+    - If information is missing for any field, use null or empty arrays/objects
+    - Always ensure valid JSON syntax that can be parsed by json.loads()
 
-    JSON Schema:
+    REQUIRED JSON STRUCTURE:
     {
       "specimen_description": {
         "botanical_name": "string",
@@ -234,16 +319,16 @@ research_formatter = Agent(
       "key_compounds": [
         {
           "compound": "string",
-          "class": "string",
-          "concentration_mg_g": number,
+          "class": "string", 
+          "concentration_mg_g": "number or null",
           "function": "string"
         }
       ],
       "compound_distribution": {
-        "Flavonoid": number,
-        "Phenolic acid": number,
-        "Carotenoid": number,
-        "Mineral": number
+        "Flavonoid": "number or null",
+        "Phenolic_acid": "number or null", 
+        "Carotenoid": "number or null",
+        "Mineral": "number or null"
       },
       "toxicities_and_deficiencies": {
         "toxicities": ["string"],
@@ -262,31 +347,13 @@ research_formatter = Agent(
       ]
     }
 
-    botanical_name: Latin name of the herb.
-    common_names: List of common names in English.
-    part_used: Part of the plant used medicinally (e.g., leaves, roots).
-    preparation_form: Form in which the herb is prepared (e.g., extract, powder).
-    morphology: Description of the plant's physical characteristics.
-    key_compounds: List of key chemical compounds found in the herb.
-        compound: Name of the compound.
-        class: Chemical class (e.g., Flavonoid, Alkaloid).
-        concentration_mg_g: Concentration in mg/g.
-        function: Biological function or effect.
-    compound_distribution: Distribution of major compound classes as percentages.
-        Flavonoid: Percentage of flavonoids.
-        Phenolic acid: Percentage of phenolic acids.
-        Carotenoid: Percentage of carotenoids.
-        Mineral: Percentage of minerals.
-    toxicities_and_deficiencies: Known toxicities and nutrient deficiencies.
-        toxicities: List of known toxic effects.
-        deficiencies: List of nutrient deficiencies caused by the herb.
-    complementary_botanicals: Plants that enhance therapeutic effect or bioavailability when combined.
-        iron_deficiency_anemia (example condition-specific synergy) → Plants that pair well to treat a given ailment.
-        enhanced_bioavailability → Plants that improve absorption of key compounds.
-    treatable_ailments: List of ailments treatable with this herb.
-    pharmaceutical_comparison: Comparison with conventional pharmaceuticals.
-    """
-    ),
+    RULES:
+    1. Return ONLY the JSON object, nothing else
+    2. Use null for missing numerical values
+    3. Use empty arrays [] for missing list values  
+    4. Use empty strings "" for missing string values
+    5. Maintain the exact field names and structure
+    """),
     llm=agent,
     allow_delegation=False,
 )
@@ -327,6 +394,7 @@ format_output = Task(
     agent=research_formatter,
     context=[analyze_data],
 )
+
 
 crew = Crew(
     agents=[sql_dev, data_analyst, research_formatter],
