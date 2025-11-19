@@ -293,35 +293,134 @@ data_analyst = Agent(
 
 
 # second research template
+# research_formatter = Agent(
+#     role="Formatter Specialist",
+#     goal="Transform retrieved botanical research into structured JSON",
+#     backstory=dedent(
+#         "You are a highly disciplined data formatter. "
+#         "Your sole responsibility is to take research output and convert it into a concise, standardized JSON structure."
+#     ),
+#     instructions=dedent("""
+#     CRITICAL INSTRUCTIONS:
+#     - You MUST return ONLY valid JSON, no additional text, no explanations
+#     - The JSON MUST follow this EXACT structure every time
+#     - If information is missing for any field, use null or empty arrays/objects
+#     - Always ensure valid JSON syntax that can be parsed by json.loads()
+#
+#     REQUIRED JSON STRUCTURE:
+#     {
+#       "specimen_description": {
+#         "botanical_name": "string",
+#         "common_names": ["string"],
+#         "part_used": "string",
+#         "preparation_form": "string",
+#         "morphology": "string"
+#       },
+#       "key_compounds": [
+#         {
+#           "compound": "string",
+#           "class": "string",
+#           "concentration_mg_g": "number or null",
+#           "function": "string"
+#         }
+#       ],
+#       "compound_distribution": {
+#         "Flavonoid": "number or null",
+#         "Phenolic_acid": "number or null",
+#         "Carotenoid": "number or null",
+#         "Mineral": "number or null"
+#       },
+#       "toxicities_and_deficiencies": {
+#         "toxicities": ["string"],
+#         "deficiencies": ["string"]
+#       },
+#       "complementary_botanicals": {
+#         "iron_deficiency_anemia": ["string"],
+#         "enhanced_bioavailability": ["string"]
+#       },
+#       "treatable_ailments": ["string"],
+#       "pharmaceutical_comparison": [
+#         {
+#           "pharmaceutical": "string",
+#           "comparison": "string"
+#         }
+#       ]
+#     }
+#
+#     RULES:
+#     1. Return ONLY the JSON object, nothing else
+#     2. Use null for missing numerical values
+#     3. Use empty arrays [] for missing list values
+#     4. Use empty strings "" for missing string values
+#     5. Maintain the exact field names and structure
+#     """),
+#     llm=agent,
+#     allow_delegation=False,
+# )
+#
+# # Create Tasks
+# extract_data = Task(
+#     description=("Extract data that is required for the query {query}."
+#                  " First figure out which tables to use and what SQL query to run."
+#                  "query the database using latin name if common name search fails."
+#                  " Then check the SQL query for correctness and execute it."
+#                  " Finally analyze the data and return the results."
+#                  " Only use the tools available to you. Do not make up any data."
+#                  "for each query, return: the botanical name, common names, part used, preparation form, key compounds, toxicities and deficiencies, complimentary botanicals, treatable ailments, pharmaceutical comparisons and morphology of the herb mentioned in the query."
+#                  " If you cannot find the data for any of these fields in the database, search for it using the search tool."
+#                  "If there are multiple herbs mentioned in the query, return the information for all of them. If no herbs are mentioned in the query, return an empty result."),
+#     expected_output="Database result for the query including botanical name, common names, part used, preparation form and morphology of the herb.",
+#     agent=sql_dev,
+# )
+#
+# analyze_data = Task(
+#     description=("Analyze the data from the database and write an analysis for {query}."
+#                  " Make sure to base your analysis on the provided data and do not make up any information."
+#                  " If the data is incomplete or insufficient, state that in your analysis."
+#                  " Write a detailed analysis that covers all aspects of the data."
+#                  " The analysis should be easy to understand and to the point."
+#                  " Use bullet points, tables or other formatting to make the analysis clear."
+#                  " The analysis should be comprehensive and cover all relevant details."),
+#     expected_output="Detailed analysis text",
+#     agent=data_analyst,
+#     context=[extract_data],
+# )
+#
+# format_output = Task(
+#     description=(
+#         "Convert the retrieved information from the analysis into the standardized JSON format"
+#     ),
+#     expected_output="json format",
+#     agent=research_formatter,
+#     context=[analyze_data],
+# )
+
+
 research_formatter = Agent(
-    role="Formatter Specialist",
-    goal="Transform retrieved botanical research into structured JSON",
+    role="Strict JSON Formatter",
+    goal="Transform botanical research into EXACT JSON structure using ONLY specified field names",
     backstory=dedent(
-        "You are a highly disciplined data formatter. "
-        "Your sole responsibility is to take research output and convert it into a concise, standardized JSON structure."
+        "You are an extremely disciplined data formatter who follows instructions precisely. "
+        "You NEVER invent field names and ALWAYS use the exact variable names provided."
     ),
     instructions=dedent("""
-    CRITICAL INSTRUCTIONS:
-    - You MUST return ONLY valid JSON, no additional text, no explanations
-    - The JSON MUST follow this EXACT structure every time
-    - If information is missing for any field, use null or empty arrays/objects
-    - Always ensure valid JSON syntax that can be parsed by json.loads()
+    CRITICAL: You MUST use ONLY these exact field names. DO NOT invent new names.
 
-    REQUIRED JSON STRUCTURE:
+    REQUIRED JSON STRUCTURE - USE THESE EXACT FIELD NAMES:
     {
       "specimen_description": {
-        "botanical_name": "string",
-        "common_names": ["string"],
-        "part_used": "string",
-        "preparation_form": "string",
-        "morphology": "string"
+        "botanical_name": "string",           // NEVER use: plant_name, scientific_name, botanical_information
+        "common_names": ["string"],           // NEVER use: synonyms, other_names, common_names_list
+        "part_used": "string",                // NEVER use: parts_used, plant_parts, utilized_parts  
+        "preparation_form": "string",         // NEVER use: preparation_forms, preparation_methods, forms
+        "morphology": "string"                // NEVER use: description, plant_description, physical_characteristics
       },
-      "key_compounds": [
+      "key_compounds": [                      // NEVER use: chemical_compounds, active_compounds, compounds
         {
-          "compound": "string",
+          "compound": "string",               // NEVER use: name, chemical_name, component
           "class": "string", 
           "concentration_mg_g": "number or null",
-          "function": "string"
+          "function": "string"                // NEVER use: description, effect, property
         }
       ],
       "compound_distribution": {
@@ -330,69 +429,62 @@ research_formatter = Agent(
         "Carotenoid": "number or null",
         "Mineral": "number or null"
       },
-      "toxicities_and_deficiencies": {
-        "toxicities": ["string"],
-        "deficiencies": ["string"]
+      "toxicities_and_deficiencies": {        // NEVER use: safety_profile, side_effects, adverse_effects
+        "toxicities": ["string"],             // NEVER use: potential_adverse_effects, safety_concerns
+        "deficiencies": ["string"]            // NEVER use: contraindications, limitations
       },
-      "complementary_botanicals": {
+      "complementary_botanicals": {           // NEVER use: synergistic_combinations, herb_combinations
         "iron_deficiency_anemia": ["string"],
-        "enhanced_bioavailability": ["string"]
+        "enhanced_bioavailability": ["string"] // NEVER use: complementary_herbs, synergistic_herbs
       },
-      "treatable_ailments": ["string"],
-      "pharmaceutical_comparison": [
+      "treatable_ailments": ["string"],       // NEVER use: therapeutic_applications, medical_uses, conditions
+      "pharmaceutical_comparison": [          // NEVER use: drug_comparisons, pharmaceutical_context
         {
-          "pharmaceutical": "string",
-          "comparison": "string"
+          "pharmaceutical": "string",         // NEVER use: drug_name, medicine, compound
+          "comparison": "string"              // NEVER use: description, effect_comparison, similarity
         }
       ]
     }
 
-    RULES:
-    1. Return ONLY the JSON object, nothing else
-    2. Use null for missing numerical values
-    3. Use empty arrays [] for missing list values  
-    4. Use empty strings "" for missing string values
-    5. Maintain the exact field names and structure
+    FIELD MAPPING RULES - TRANSFORM THESE TO CORRECT FIELDS:
+    If you see "plant_name" → USE "specimen_description.botanical_name"
+    If you see "scientific_name" → USE "specimen_description.botanical_name" 
+    If you see "parts_used" → USE "specimen_description.part_used" (convert array to string)
+    If you see "preparation_forms" → USE "specimen_description.preparation_form" (convert array to string)
+    If you see "chemical_compounds" → USE "key_compounds"
+    If you see "therapeutic_applications" → USE "treatable_ailments"
+    If you see "safety_profile" → USE "toxicities_and_deficiencies"
+    If you see "synergistic_combinations" → USE "complementary_botanicals.enhanced_bioavailability"
+    If you see "pharmaceutical_comparisons" → USE "pharmaceutical_comparison"
+
+    STRICT FORMATTING RULES:
+    1. Return ONLY the JSON object, no explanations, no markdown, no code blocks
+    2. Use EXACT field names from above - no variations allowed
+    3. Convert arrays to strings for part_used and preparation_form
+    4. If data is missing, use: null for numbers, [] for arrays, "" for strings
+    5. NEVER include additional fields like "conclusion", "notes", "data_limitations"
+    6. ALWAYS use this structure even if some fields are empty
+
+    EXAMPLES OF WRONG → RIGHT:
+    WRONG: "plant_name": "Neem" 
+    RIGHT: "specimen_description": {"botanical_name": "Neem"}
+
+    WRONG: "parts_used": ["Leaves", "Bark"]
+    RIGHT: "specimen_description": {"part_used": "Leaves, Bark"}
+
+    WRONG: "chemical_compounds": ["Azadirachtin"]
+    RIGHT: "key_compounds": [{"compound": "Azadirachtin", "class": "", "concentration_mg_g": null, "function": ""}]
+
+    WRONG: "therapeutic_applications": ["Malaria"]
+    RIGHT: "treatable_ailments": ["Malaria"]
+
+    WRONG: "safety_profile": {"side_effects": ["Nausea"]}
+    RIGHT: "toxicities_and_deficiencies": {"toxicities": ["Nausea"]}
+
+    FINAL OUTPUT MUST BE: { ... } with no surrounding text
     """),
     llm=agent,
     allow_delegation=False,
-)
-
-# Create Tasks
-extract_data = Task(
-    description=("Extract data that is required for the query {query}."
-                 " First figure out which tables to use and what SQL query to run."
-                 "query the database using latin name if common name search fails."
-                 " Then check the SQL query for correctness and execute it."
-                 " Finally analyze the data and return the results."
-                 " Only use the tools available to you. Do not make up any data."
-                 "for each query, return: the botanical name, common names, part used, preparation form, key compounds, toxicities and deficiencies, complimentary botanicals, treatable ailments, pharmaceutical comparisons and morphology of the herb mentioned in the query."
-                 " If you cannot find the data for any of these fields in the database, search for it using the search tool."
-                 "If there are multiple herbs mentioned in the query, return the information for all of them. If no herbs are mentioned in the query, return an empty result."),
-    expected_output="Database result for the query including botanical name, common names, part used, preparation form and morphology of the herb.",
-    agent=sql_dev,
-)
-
-analyze_data = Task(
-    description=("Analyze the data from the database and write an analysis for {query}."
-                 " Make sure to base your analysis on the provided data and do not make up any information."
-                 " If the data is incomplete or insufficient, state that in your analysis."
-                 " Write a detailed analysis that covers all aspects of the data."
-                 " The analysis should be easy to understand and to the point."
-                 " Use bullet points, tables or other formatting to make the analysis clear."
-                 " The analysis should be comprehensive and cover all relevant details."),
-    expected_output="Detailed analysis text",
-    agent=data_analyst,
-    context=[extract_data],
-)
-
-format_output = Task(
-    description=(
-        "Convert the retrieved information from the analysis into the standardized JSON format"
-    ),
-    expected_output="json format",
-    agent=research_formatter,
-    context=[analyze_data],
 )
 
 
