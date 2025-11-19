@@ -357,43 +357,44 @@ data_analyst = Agent(
 #     llm=agent,
 #     allow_delegation=False,
 # )
-#
-# # Create Tasks
-# extract_data = Task(
-#     description=("Extract data that is required for the query {query}."
-#                  " First figure out which tables to use and what SQL query to run."
-#                  "query the database using latin name if common name search fails."
-#                  " Then check the SQL query for correctness and execute it."
-#                  " Finally analyze the data and return the results."
-#                  " Only use the tools available to you. Do not make up any data."
-#                  "for each query, return: the botanical name, common names, part used, preparation form, key compounds, toxicities and deficiencies, complimentary botanicals, treatable ailments, pharmaceutical comparisons and morphology of the herb mentioned in the query."
-#                  " If you cannot find the data for any of these fields in the database, search for it using the search tool."
-#                  "If there are multiple herbs mentioned in the query, return the information for all of them. If no herbs are mentioned in the query, return an empty result."),
-#     expected_output="Database result for the query including botanical name, common names, part used, preparation form and morphology of the herb.",
-#     agent=sql_dev,
-# )
-#
-# analyze_data = Task(
-#     description=("Analyze the data from the database and write an analysis for {query}."
-#                  " Make sure to base your analysis on the provided data and do not make up any information."
-#                  " If the data is incomplete or insufficient, state that in your analysis."
-#                  " Write a detailed analysis that covers all aspects of the data."
-#                  " The analysis should be easy to understand and to the point."
-#                  " Use bullet points, tables or other formatting to make the analysis clear."
-#                  " The analysis should be comprehensive and cover all relevant details."),
-#     expected_output="Detailed analysis text",
-#     agent=data_analyst,
-#     context=[extract_data],
-# )
-#
-# format_output = Task(
-#     description=(
-#         "Convert the retrieved information from the analysis into the standardized JSON format"
-#     ),
-#     expected_output="json format",
-#     agent=research_formatter,
-#     context=[analyze_data],
-# )
+
+
+# Create Tasks
+extract_data = Task(
+    description=("Extract data that is required for the query {query}."
+                 " First figure out which tables to use and what SQL query to run."
+                 "query the database using latin name if common name search fails."
+                 " Then check the SQL query for correctness and execute it."
+                 " Finally analyze the data and return the results."
+                 " Only use the tools available to you. Do not make up any data."
+                 "for each query, return: the botanical name, common names, part used, preparation form, key compounds, toxicities and deficiencies, complimentary botanicals, treatable ailments, pharmaceutical comparisons and morphology of the herb mentioned in the query."
+                 " If you cannot find the data for any of these fields in the database, search for it using the search tool."
+                 "If there are multiple herbs mentioned in the query, return the information for all of them. If no herbs are mentioned in the query, return an empty result."),
+    expected_output="Database result for the query including botanical name, common names, part used, preparation form and morphology of the herb.",
+    agent=sql_dev,
+)
+
+analyze_data = Task(
+    description=("Analyze the data from the database and write an analysis for {query}."
+                 " Make sure to base your analysis on the provided data and do not make up any information."
+                 " If the data is incomplete or insufficient, state that in your analysis."
+                 " Write a detailed analysis that covers all aspects of the data."
+                 " The analysis should be easy to understand and to the point."
+                 " Use bullet points, tables or other formatting to make the analysis clear."
+                 " The analysis should be comprehensive and cover all relevant details."),
+    expected_output="Detailed analysis text",
+    agent=data_analyst,
+    context=[extract_data],
+)
+
+format_output = Task(
+    description=(
+        "Convert the retrieved information from the analysis into the standardized JSON format"
+    ),
+    expected_output="json format",
+    agent=research_formatter,
+    context=[analyze_data],
+)
 
 
 research_formatter = Agent(
