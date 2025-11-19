@@ -359,96 +359,184 @@ data_analyst = Agent(
 # )
 
 
+# research_formatter = Agent(
+#     role="Strict JSON Formatter",
+#     goal="Transform botanical research into EXACT JSON structure using ONLY specified field names",
+#     backstory=dedent(
+#         "You are an extremely disciplined data formatter who follows instructions precisely. "
+#         "You NEVER invent field names and ALWAYS use the exact variable names provided."
+#     ),
+#     instructions=dedent("""
+#     CRITICAL: You MUST use ONLY these exact field names. DO NOT invent new names.
+#
+#     REQUIRED JSON STRUCTURE - USE THESE EXACT FIELD NAMES:
+#     {
+#       "specimen_description": {
+#         "botanical_name": "string",           // NEVER use: plant_name, scientific_name, botanical_information
+#         "common_names": ["string"],           // NEVER use: synonyms, other_names, common_names_list
+#         "part_used": "string",                // NEVER use: parts_used, plant_parts, utilized_parts
+#         "preparation_form": "string",         // NEVER use: preparation_forms, preparation_methods, forms
+#         "morphology": "string"                // NEVER use: description, plant_description, physical_characteristics
+#       },
+#       "key_compounds": [                      // NEVER use: chemical_compounds, active_compounds, compounds
+#         {
+#           "compound": "string",               // NEVER use: name, chemical_name, component
+#           "class": "string",
+#           "concentration_mg_g": "number or null",
+#           "function": "string"                // NEVER use: description, effect, property
+#         }
+#       ],
+#       "compound_distribution": {
+#         "Flavonoid": "number or null",
+#         "Phenolic_acid": "number or null",
+#         "Carotenoid": "number or null",
+#         "Mineral": "number or null"
+#       },
+#       "toxicities_and_deficiencies": {        // NEVER use: safety_profile, side_effects, adverse_effects
+#         "toxicities": ["string"],             // NEVER use: potential_adverse_effects, safety_concerns
+#         "deficiencies": ["string"]            // NEVER use: contraindications, limitations
+#       },
+#       "complementary_botanicals": {           // NEVER use: synergistic_combinations, herb_combinations
+#         "iron_deficiency_anemia": ["string"],
+#         "enhanced_bioavailability": ["string"] // NEVER use: complementary_herbs, synergistic_herbs
+#       },
+#       "treatable_ailments": ["string"],       // NEVER use: therapeutic_applications, medical_uses, conditions
+#       "pharmaceutical_comparison": [          // NEVER use: drug_comparisons, pharmaceutical_context
+#         {
+#           "pharmaceutical": "string",         // NEVER use: drug_name, medicine, compound
+#           "comparison": "string"              // NEVER use: description, effect_comparison, similarity
+#         }
+#       ]
+#     }
+#
+#     FIELD MAPPING RULES - TRANSFORM THESE TO CORRECT FIELDS:
+#     If you see "plant_name" → USE "specimen_description.botanical_name"
+#     If you see "scientific_name" → USE "specimen_description.botanical_name"
+#     If you see "parts_used" → USE "specimen_description.part_used" (convert array to string)
+#     If you see "preparation_forms" → USE "specimen_description.preparation_form" (convert array to string)
+#     If you see "chemical_compounds" → USE "key_compounds"
+#     If you see "therapeutic_applications" → USE "treatable_ailments"
+#     If you see "safety_profile" → USE "toxicities_and_deficiencies"
+#     If you see "synergistic_combinations" → USE "complementary_botanicals.enhanced_bioavailability"
+#     If you see "pharmaceutical_comparisons" → USE "pharmaceutical_comparison"
+#
+#     STRICT FORMATTING RULES:
+#     1. Return ONLY the JSON object, no explanations, no markdown, no code blocks
+#     2. Use EXACT field names from above - no variations allowed
+#     3. Convert arrays to strings for part_used and preparation_form
+#     4. If data is missing, use: null for numbers, [] for arrays, "" for strings
+#     5. NEVER include additional fields like "conclusion", "notes", "data_limitations"
+#     6. ALWAYS use this structure even if some fields are empty
+#
+#     EXAMPLES OF WRONG → RIGHT:
+#     WRONG: "plant_name": "Neem"
+#     RIGHT: "specimen_description": {"botanical_name": "Neem"}
+#
+#     WRONG: "parts_used": ["Leaves", "Bark"]
+#     RIGHT: "specimen_description": {"part_used": "Leaves, Bark"}
+#
+#     WRONG: "chemical_compounds": ["Azadirachtin"]
+#     RIGHT: "key_compounds": [{"compound": "Azadirachtin", "class": "", "concentration_mg_g": null, "function": ""}]
+#
+#     WRONG: "therapeutic_applications": ["Malaria"]
+#     RIGHT: "treatable_ailments": ["Malaria"]
+#
+#     WRONG: "safety_profile": {"side_effects": ["Nausea"]}
+#     RIGHT: "toxicities_and_deficiencies": {"toxicities": ["Nausea"]}
+#
+#     FINAL OUTPUT MUST BE: { ... } with no surrounding text
+#     """),
+#     llm=agent,
+#     allow_delegation=False,
+# )
+
 research_formatter = Agent(
-    role="Strict JSON Formatter",
-    goal="Transform botanical research into EXACT JSON structure using ONLY specified field names",
+    role="Strict Data Extractor",
+    goal="Extract ONLY these 9 variables from any botanical response - ignore everything else",
     backstory=dedent(
-        "You are an extremely disciplined data formatter who follows instructions precisely. "
-        "You NEVER invent field names and ALWAYS use the exact variable names provided."
+        "You are a precise data extractor. You scan botanical information and extract ONLY "
+        "the 9 specified variables. You ignore all other data, notes, assessments, and additional fields."
     ),
     instructions=dedent("""
-    CRITICAL: You MUST use ONLY these exact field names. DO NOT invent new names.
+    CRITICAL: Extract ONLY these 9 variables. Ignore ALL other data including:
+    - data_completeness_assessment
+    - plant_morphology (extract only the description for Morphology)
+    - therapeutic_applications (extract all ailments into one list)
+    - safety_profile (extract toxicities and deficiencies into one list)
+    - Any other fields not in the 9 variables below
 
-    REQUIRED JSON STRUCTURE - USE THESE EXACT FIELD NAMES:
+    REQUIRED 9 VARIABLES - EXTRACT AND RETURN ONLY THESE:
     {
-      "specimen_description": {
-        "botanical_name": "string",           // NEVER use: plant_name, scientific_name, botanical_information
-        "common_names": ["string"],           // NEVER use: synonyms, other_names, common_names_list
-        "part_used": "string",                // NEVER use: parts_used, plant_parts, utilized_parts  
-        "preparation_form": "string",         // NEVER use: preparation_forms, preparation_methods, forms
-        "morphology": "string"                // NEVER use: description, plant_description, physical_characteristics
-      },
-      "key_compounds": [                      // NEVER use: chemical_compounds, active_compounds, compounds
-        {
-          "compound": "string",               // NEVER use: name, chemical_name, component
-          "class": "string", 
-          "concentration_mg_g": "number or null",
-          "function": "string"                // NEVER use: description, effect, property
-        }
-      ],
-      "compound_distribution": {
-        "Flavonoid": "number or null",
-        "Phenolic_acid": "number or null", 
-        "Carotenoid": "number or null",
-        "Mineral": "number or null"
-      },
-      "toxicities_and_deficiencies": {        // NEVER use: safety_profile, side_effects, adverse_effects
-        "toxicities": ["string"],             // NEVER use: potential_adverse_effects, safety_concerns
-        "deficiencies": ["string"]            // NEVER use: contraindications, limitations
-      },
-      "complementary_botanicals": {           // NEVER use: synergistic_combinations, herb_combinations
-        "iron_deficiency_anemia": ["string"],
-        "enhanced_bioavailability": ["string"] // NEVER use: complementary_herbs, synergistic_herbs
-      },
-      "treatable_ailments": ["string"],       // NEVER use: therapeutic_applications, medical_uses, conditions
-      "pharmaceutical_comparison": [          // NEVER use: drug_comparisons, pharmaceutical_context
-        {
-          "pharmaceutical": "string",         // NEVER use: drug_name, medicine, compound
-          "comparison": "string"              // NEVER use: description, effect_comparison, similarity
-        }
-      ]
+      "Botanical_name": "string",
+      "Common_name": ["string"], 
+      "Parts_used": ["string"],
+      "Preparation_form": ["string"],
+      "Morphology": "string",
+      "Key_compounds": ["string"],
+      "Toxicities_and_Deficiencies": ["string"],
+      "Complementary_Botanicals": ["string"],
+      "Treatable_ailments": ["string"],
+      "Pharmaceutical_Comparisons": ["string"]
     }
 
-    FIELD MAPPING RULES - TRANSFORM THESE TO CORRECT FIELDS:
-    If you see "plant_name" → USE "specimen_description.botanical_name"
-    If you see "scientific_name" → USE "specimen_description.botanical_name" 
-    If you see "parts_used" → USE "specimen_description.part_used" (convert array to string)
-    If you see "preparation_forms" → USE "specimen_description.preparation_form" (convert array to string)
-    If you see "chemical_compounds" → USE "key_compounds"
-    If you see "therapeutic_applications" → USE "treatable_ailments"
-    If you see "safety_profile" → USE "toxicities_and_deficiencies"
-    If you see "synergistic_combinations" → USE "complementary_botanicals.enhanced_bioavailability"
-    If you see "pharmaceutical_comparisons" → USE "pharmaceutical_comparison"
+    EXTRACTION RULES FROM YOUR SAMPLE RESPONSE:
 
-    STRICT FORMATTING RULES:
-    1. Return ONLY the JSON object, no explanations, no markdown, no code blocks
-    2. Use EXACT field names from above - no variations allowed
-    3. Convert arrays to strings for part_used and preparation_form
-    4. If data is missing, use: null for numbers, [] for arrays, "" for strings
-    5. NEVER include additional fields like "conclusion", "notes", "data_limitations"
-    6. ALWAYS use this structure even if some fields are empty
+    1. "Botanical_name" - Extract directly from "botanical_name" field
+       • "Cymbopogon citratus" → "Cymbopogon citratus"
 
-    EXAMPLES OF WRONG → RIGHT:
-    WRONG: "plant_name": "Neem" 
-    RIGHT: "specimen_description": {"botanical_name": "Neem"}
+    2. "Common_name" - Extract array from "common_names" field
+       • ["Lemongrass", "Barbed wire grass"...] → ["Lemongrass", "Barbed wire grass"...]
 
-    WRONG: "parts_used": ["Leaves", "Bark"]
-    RIGHT: "specimen_description": {"part_used": "Leaves, Bark"}
+    3. "Parts_used" - Extract from "usable_parts_and_preparations.part_used"
+       • "The leaves and stalks..." → Extract and convert to ["Leaves", "Stalks"]
+       • If it's a string describing parts, extract the plant parts mentioned
 
-    WRONG: "chemical_compounds": ["Azadirachtin"]
-    RIGHT: "key_compounds": [{"compound": "Azadirachtin", "class": "", "concentration_mg_g": null, "function": ""}]
+    4. "Preparation_form" - Extract from "usable_parts_and_preparations.preparation_forms"
+       • ["Tea", "Essential Oil", "Tinctures"] → ["Tea", "Essential Oil", "Tinctures"]
 
-    WRONG: "therapeutic_applications": ["Malaria"]
-    RIGHT: "treatable_ailments": ["Malaria"]
+    5. "Morphology" - Extract description from "plant_morphology"
+       • Take the main growth description: "Tall grass, reaching up to 5 feet..."
+       • Combine key points into one descriptive string
 
-    WRONG: "safety_profile": {"side_effects": ["Nausea"]}
-    RIGHT: "toxicities_and_deficiencies": {"toxicities": ["Nausea"]}
+    6. "Key_compounds" - Extract directly from "key_chemical_constituents"
+       • ["Citral", "Geraniol", "Citronellol", "Limonene"] → ["Citral", "Geraniol", "Citronellol", "Limonene"]
 
-    FINAL OUTPUT MUST BE: { ... } with no surrounding text
+    7. "Toxicities_and_Deficiencies" - Extract from "safety_profile"
+       • Toxicities: Extract from "safety_profile.toxicities.general" and "safety_profile.toxicities.caution"
+       • Deficiencies: Extract from "safety_profile.deficiencies"
+       • Combine into one array: ["No widely documented toxicities", "Potential skin irritation from essential oil", "No specific deficiencies"]
+
+    8. "Complementary_Botanicals" - Extract directly from "complimentary_botanicals"
+       • ["Ginger", "Mint"] → ["Ginger", "Mint"]
+
+    9. "Treatable_ailments" - Extract ALL from "therapeutic_applications"
+       • Combine ALL subcategories into one flat array:
+         - digestive_system: ["Digestive disorders", "Stomachache", "Vomiting"]
+         - fever_and_inflammation: ["Fever", "Rheumatism"]
+         - respiratory_system: ["Coughs"]
+         - etc.
+       • Final: ["Digestive disorders", "Stomachache", "Vomiting", "Fever", "Rheumatism", "Coughs"...]
+
+    10. "Pharmaceutical_Comparisons" - Extract directly from "pharmaceutical_comparisons"
+        • ["Anti-inflammatory Drugs: Its properties...", "Digestive Aids: Its use..."] 
+        → ["Anti-inflammatory Drugs: Its properties...", "Digestive Aids: Its use..."]
+
+    MISSING DATA RULES:
+    • If any variable is not present, use empty array [] or empty string ""
+    • If data is nested, extract and flatten it
+    • If data is in descriptive text, extract the key information
+
+    IGNORE THESE FIELDS COMPLETELY:
+    • data_completeness_assessment
+    • Any additional notes, summaries, or assessments
+    • Any fields not mapping to the 9 variables
+
+    FINAL OUTPUT MUST CONTAIN ONLY THESE 9 VARIABLES WITH EXACT THESE NAMES.
     """),
     llm=agent,
     allow_delegation=False,
 )
+
 # Create Tasks
 extract_data = Task(
     description=("Extract data that is required for the query {query}."
@@ -479,9 +567,16 @@ analyze_data = Task(
 
 format_output = Task(
     description=(
-        "Convert the retrieved information from the analysis into the standardized JSON format"
+        "Extract and return ONLY these 9 variables from the botanical data: "
+        "Botanical_name, Common_name, Parts_used, Preparation_form, Morphology, "
+        "Key_compounds, Toxicities_and_Deficiencies, Complementary_Botanicals, "
+        "Treatable_ailments, Pharmaceutical_Comparisons. "
+        "Ignore all other fields including data_completeness_assessment and any additional notes. "
+        "Flatten nested therapeutic applications into one Treatable_ailments array. "
+        "Combine toxicities and deficiencies into one Toxicities_and_Deficiencies array. "
+        "Return ONLY the JSON object with these 9 exact variables."
     ),
-    expected_output="json format",
+    expected_output="JSON with exactly 9 variables containing only the extracted data",
     agent=research_formatter,
     context=[analyze_data],
 )
