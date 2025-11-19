@@ -292,7 +292,7 @@ data_analyst = Agent(
 # )
 
 
-# In your aggg.py, update the research_formatter agent instructions:
+# second research template
 research_formatter = Agent(
     role="Formatter Specialist",
     goal="Transform retrieved botanical research into structured JSON",
