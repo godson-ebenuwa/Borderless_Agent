@@ -1,38 +1,11 @@
-# from fastapi import FastAPI
-# from pydantic import BaseModel
-# from aggg import crew  # Import your existing agent
-#
-# app = FastAPI(title="Agent API")
-#
-# class QueryRequest(BaseModel):
-#     query: str
-#
-# @app.get("/")
-# def home():
-#     return {"message": "Agent API is running"}
-#
-# @app.post("/api/query")
-# def query_agent(request: QueryRequest):
-#     """Simple endpoint that calls your existing agent"""
-#     try:
-#         # This calls YOUR existing agent code directly
-#         result = crew.kickoff(inputs={"query": request.query})
-#         return {"success": True, "result": result.raw}
-#     except Exception as e:
-#         return {"success": False, "error": str(e)}
-#
-# if __name__ == "__fast__":
-#     import uvicorn
-#     uvicorn.run(app, host="0.0.0.0", port=8000)
-#
-#
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import os
 from dotenv import load_dotenv
 import json
+import re
 
 # Load environment variables first
 load_dotenv()
@@ -40,23 +13,18 @@ load_dotenv()
 # Import your agent
 from aggg import crew
 
-# Enhanced FastAPI app with CORS
 app = FastAPI(
-    title="Borderless Agent API",
+    title="TCM Agent API",
     description="Traditional Chinese Medicine AI Agent API with CrewAI integration.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
-# Add CORS middleware
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5000",  # Your frontend
-        "http://127.0.0.1:5000",  # Alternative localhost
-        "https://borderlessagent-bor-agent.up.railway.app",  # Your backend itself
-    ],
+    allow_origins=["*"],  # Adjust for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,79 +34,135 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     query: str
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "query": "bitter leaf"
-            }
-        }
+
+class TCMResponse(BaseModel):
+    specimen_description: Dict[str, Any]
+    key_compounds: List[Dict[str, Any]]
+    compound_distribution: Dict[str, Any]
+    toxicities_and_deficiencies: Dict[str, List[str]]
+    complementary_botanicals: Dict[str, List[str]]
+    treatable_ailments: List[str]
+    pharmaceutical_comparison: List[Dict[str, str]]
 
 
 class QueryResponse(BaseModel):
     success: bool
-    result: Optional[Dict[str, Any]] = None
+    data: Optional[TCMResponse] = None
     error: Optional[str] = None
+    raw_output: Optional[str] = None
 
 
-def parse_agent_response(raw_response: str) -> Dict[str, Any]:
+def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
     """
-    Parse the agent's raw response into structured JSON
+    Extract JSON from text, even if it's wrapped in other content
     """
     try:
-        # Try to parse as JSON directly
-        return json.loads(raw_response)
+        # Try direct JSON parse first
+        return json.loads(text)
     except json.JSONDecodeError:
-        # If it's not valid JSON, try to extract JSON from the response
-        try:
-            # Look for JSON pattern in the response
-            start_idx = raw_response.find('{')
-            end_idx = raw_response.rfind('}') + 1
-            if start_idx != -1 and end_idx != 0:
-                json_str = raw_response[start_idx:end_idx]
-                return json.loads(json_str)
-            else:
-                # If no JSON found, return the raw text as a message
-                return {
-                    "message": raw_response,
-                    "raw_output": raw_response
-                }
-        except:
-            # If all parsing fails, return the raw text
-            return {
-                "message": raw_response,
-                "raw_output": raw_response
-            }
+        # Try to find JSON pattern in the text
+        json_pattern = r'\{.*\}'
+        matches = re.findall(json_pattern, text, re.DOTALL)
+
+        for match in matches:
+            try:
+                return json.loads(match)
+            except json.JSONDecodeError:
+                continue
+
+        return None
 
 
-@app.get("/", tags=["Health Check"])
-async def root():
-    return {"message": "TCM Agent API is running", "version": "1.0.0"}
+def create_consistent_structure(parsed_data: Dict[str, Any]) -> TCMResponse:
+    """
+    Ensure the response always has the same structure
+    """
+    # Default structure
+    default_structure = {
+        "specimen_description": {
+            "botanical_name": "",
+            "common_names": [],
+            "part_used": "",
+            "preparation_form": "",
+            "morphology": ""
+        },
+        "key_compounds": [],
+        "compound_distribution": {
+            "Flavonoid": None,
+            "Phenolic_acid": None,
+            "Carotenoid": None,
+            "Mineral": None
+        },
+        "toxicities_and_deficiencies": {
+            "toxicities": [],
+            "deficiencies": []
+        },
+        "complementary_botanicals": {
+            "iron_deficiency_anemia": [],
+            "enhanced_bioavailability": []
+        },
+        "treatable_ailments": [],
+        "pharmaceutical_comparison": []
+    }
+
+    # Merge parsed data with default structure
+    def deep_merge(default, new):
+        result = default.copy()
+        for key, value in new.items():
+            if key in result:
+                if isinstance(result[key], dict) and isinstance(value, dict):
+                    result[key] = deep_merge(result[key], value)
+                elif isinstance(result[key], list) and isinstance(value, list):
+                    result[key] = value  # Replace lists
+                else:
+                    result[key] = value
+        return result
+
+    merged_data = deep_merge(default_structure, parsed_data)
+    return TCMResponse(**merged_data)
 
 
-@app.post("/api/query", response_model=QueryResponse, tags=["TCM Agent"])
+@app.post("/api/query", response_model=QueryResponse)
 async def query_agent(request: QueryRequest):
     """
-    Query the TCM AI Agent
+    Query the TCM AI Agent with consistent JSON output
     """
     try:
         # Get the raw result from your agent
         result = crew.kickoff(inputs={"query": request.query})
 
-        # Parse the response into structured JSON
-        parsed_result = parse_agent_response(result.raw)
+        # Extract and parse JSON
+        parsed_data = extract_json_from_text(result.raw)
 
-        return QueryResponse(
-            success=True,
-            result=parsed_result
-        )
+        if parsed_data:
+            # Create consistent structure
+            consistent_data = create_consistent_structure(parsed_data)
+
+            return QueryResponse(
+                success=True,
+                data=consistent_data,
+                raw_output=result.raw  # Keep original for debugging
+            )
+        else:
+            return QueryResponse(
+                success=False,
+                error="Agent did not return valid JSON format",
+                raw_output=result.raw
+            )
+
     except Exception as e:
         return QueryResponse(
             success=False,
-            error=str(e)
+            error=f"API Error: {str(e)}"
         )
 
 
-@app.get("/health", tags=["Health Check"])
+@app.get("/")
+async def root():
+    return {"message": "TCM Agent API is running", "version": "1.0.0"}
+
+
+@app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "tcm-agent-api"}
 
