@@ -29,6 +29,6 @@ crewai-tools==0.62.3
 SQLAlchemy==2.0.43
 
 slowapi==0.1.9           # For rate limiting
-pydantic==2.5.0          # For BaseModel (ensure latest)
+pydantic         # For BaseModel (ensure latest)
 asyncio; python_version >= "3.11"  # Built-in but ensure availability
 aiofiles==23.2.1
