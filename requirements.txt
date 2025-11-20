@@ -1,5 +1,4 @@
 # Web Framework
-streamlit==1.48.0
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
@@ -13,13 +12,12 @@ langchain==0.3.27
 langchain-core==0.3.74
 langchain-community==0.3.27
 
-# LangChain Google Integration
-langchain-google-genai==2.1.9
-google-ai-generativelanguage
-google-api-core==2.25.1
+# LangChain Google Integration - FIXED VERSIONS
+langchain-google-genai==0.0.19
+google-generativeai==0.3.2
 
 # Vector Store and Search
-faiss-cpu==1.11.0  # For vector similarity search
+faiss-cpu==1.11.0
 
 # AI Agents and Tools
 crewai==0.165.1
@@ -27,15 +25,8 @@ crewai-tools==0.62.3
 
 # Database
 SQLAlchemy==2.0.43
-#fastapi==0.104.1
-#uvicorn[standard]==0.24.0
-#python-dotenv==1.0.0
-#crewai==0.165.1
-#langchain==0.3.27
-#langchain-community==0.3.27
-#langchain-google-genai==0.0.19
-google-generativeai
-#sqlalchemy==2.0.23
 pandas==2.0.3
-httpx
+
+# Additional utilities
+httpx==0.25.2
 slowapi==0.1.8
