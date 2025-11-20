@@ -27,6 +27,6 @@ SQLAlchemy==2.0.43
 # Google AI
 google-generativeai==0.3.2
 
-# Data & HTTPx
+# Data & HTTPxx
 pandas==2.0.3
 httpx==0.25.2
