@@ -1,32 +1,29 @@
 # Web Framework
-streamlit==1.48.0
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
-# HTTP and Environment
-requests==2.32.4
-python-dotenv==1.1.1
+# Environment
+python-dotenv==1.0.0
 
-# LangChain Core Framework
+# AI Agents and Tools
+crewai==0.165.1
+crewai-tools==0.62.3
+
+# LangChain Core
 langchain==0.3.27
 langchain-core==0.3.74
 langchain-community==0.3.27
 
-# LangChain Google Integration
-langchain-google-genai==0.1.7
-
-# Vector Store and Search
-faiss-cpu==1.11.0
-
-# AI Agents and Tools
-crewai==0.165.1
+# Google AI Integration - CORRECTED VERSION
+langchain-google-genai==0.0.19
+google-generativeai==0.3.2
+google-api-core==2.11.0
 
 # Database
-SQLAlchemy==2.0.43
-
-# Google AI
-google-generativeai==0.3.2
-
-# Data & HTTPxx
+sqlalchemy==2.0.23
 pandas==2.0.3
-httpx==0.25.2
+
+# Additional
+aiofiles==23.2.1
+python-multipart==0.0.9
+protobuf==4.25.3
