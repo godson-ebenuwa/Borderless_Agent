@@ -400,7 +400,7 @@ app.add_middleware(
         "http://localhost:5000",
         "http://127.0.0.1:5000",
         "https://borderlessagent-bor-agent.up.railway.app",
-        "https://borderless-sciences-hackaton.vercel.app/",
+        "https://borderless-sciences-hackaton.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
