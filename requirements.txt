@@ -15,7 +15,7 @@ langchain-community==0.3.27
 
 # LangChain Google Integration
 langchain-google-genai==2.1.9
-google-ai-generativelanguage==0.6.18
+google-ai-generativelanguage
 google-api-core==2.25.1
 
 # Vector Store and Search
@@ -34,7 +34,7 @@ SQLAlchemy==2.0.43
 #langchain==0.3.27
 #langchain-community==0.3.27
 #langchain-google-genai==0.0.19
-google-generativeai==0.3.2
+google-generativeai
 #sqlalchemy==2.0.23
 pandas==2.0.3
 httpx==0.25.2
