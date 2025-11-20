@@ -37,5 +37,5 @@ SQLAlchemy==2.0.43
 google-generativeai
 #sqlalchemy==2.0.23
 pandas==2.0.3
-httpx==0.25.2
+httpx
 slowapi==0.1.8
