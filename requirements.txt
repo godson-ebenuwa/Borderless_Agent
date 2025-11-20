@@ -9,15 +9,13 @@ python-dotenv==1.0.0
 crewai==0.165.1
 crewai-tools==0.62.3
 
-# LangChain Core
+# LangChain Core (latest)
 langchain==0.3.27
 langchain-core==0.3.74
 langchain-community==0.3.27
 
-# Google AI Integration
-langchain-google-genai==0.0.11
+# Google AI Integration (OFFICIAL)
 google-generativeai==0.4.1
-google-api-core==2.11.0
 
 # Database
 sqlalchemy==2.0.23
