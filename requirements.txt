@@ -1,4 +1,5 @@
 # Web Framework
+# Web Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
@@ -12,8 +13,8 @@ langchain==0.3.27
 langchain-core==0.3.74
 langchain-community==0.3.27
 
-# LangChain Google Integration - FIXED VERSIONS
-langchain-google-genai==0.0.19
+# LangChain Google Integration - NEWER COMPATIBLE VERSIONS
+langchain-google-genai==0.0.10rc0
 google-generativeai==0.3.2
 
 # Vector Store and Search
