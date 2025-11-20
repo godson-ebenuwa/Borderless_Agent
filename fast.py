@@ -55,7 +55,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5000",  # Your frontend
         "http://127.0.0.1:5000",  # Alternative localhost
-        "https://borderlessagent-bor-agent.up.railway.app",  # Your backend itself
+        "https://borderlessagent-bor-agent.up.railway.app",
+        "https://borderless-sciences-hackaton.vercel.app/", # Your backend itself
     ],
     allow_credentials=True,
     allow_methods=["*"],
